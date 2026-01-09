@@ -83,8 +83,9 @@ ast_output=$(ast-grep scan --config "$ASTER_ROOT/sgconfig.yml" --json $changed_f
 
 if [[ -n "$ast_output" && "$ast_output" != "[]" ]]; then
 	# Filter violations to only those on changed lines
+	# Use jq to properly escape file paths in JSON
 	echo "$ast_output" | jq -r --slurpfile ranges <(
-		awk -F: '{print "{\"file\":\"" $1 "\",\"start\":" $2 ",\"end\":" $3 "\"}"}' "$line_ranges"
+		awk -F: '{print $1 "\t" $2 "\t" $3}' "$line_ranges" | jq -R 'split("\t") | {file: .[0], start: (.[1] | tonumber), end: (.[2] | tonumber)}'
 	) '
         .[] |
         . as $violation |
