@@ -142,7 +142,17 @@ else
         # TypeScript/JavaScript symbols
         symbols+=$(ast-grep --pattern 'function $NAME($$$) { $$$BODY }' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
         symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'function $NAME($$$): $TYPE { $$$BODY }' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
         symbols+=$(ast-grep --pattern 'class $NAME { $$$BODY }' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'const $NAME = ($$$) => $BODY' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'const $NAME = ($$$): $TYPE => $BODY' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'const $NAME = async ($$$) => $BODY' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'const $NAME = async ($$$): $TYPE => $BODY' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
         symbols+=$'\n'
         # Python symbols
         symbols+=$(ast-grep --pattern 'def $NAME($$$): $$$BODY' --lang python --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
@@ -150,8 +160,8 @@ else
         symbols+=$(ast-grep --pattern 'class $NAME: $$$BODY' --lang python --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
     fi
 
-    # Normalize and filter symbols (min length 4)
-    symbols=$(echo "$symbols" | tr '[:upper:]' '[:lower:]' | tr '_' '\n' | awk 'length >= 4' | sort -u)
+    # Normalize and filter symbols (min length 4, exclude test functions)
+    symbols=$(echo "$symbols" | grep -v '^test_' | tr '[:upper:]' '[:lower:]' | tr -d '_' | awk 'length >= 4' | sort -u)
 
     if [[ -n "$symbols" ]]; then
         # Check test names in changed test files against symbols
@@ -172,17 +182,32 @@ else
             # Check each test name against symbols
             while IFS= read -r test_name; do
                 [[ -z "$test_name" ]] && continue
-                normalized_test=$(echo "$test_name" | tr '[:upper:]' '[:lower:]' | tr '_' '\n')
+
+                # Normalize test name: lowercase, strip quotes, replace spaces with underscores
+                normalized_test=$(echo "$test_name" | tr '[:upper:]' '[:lower:]' | tr -d '"'"'" | tr ' ' '_')
+
+                # Split test name into segments
+                IFS='_' read -ra segments <<< "$normalized_test"
 
                 while IFS= read -r symbol; do
                     [[ -z "$symbol" ]] && continue
-                    if echo "$normalized_test" | grep -q "^${symbol}$"; then
-                        echo "error[sut-name]: Test '$test_name' in $test_file references symbol '$symbol'"
-                        echo "  Tests should describe behavior, not reference implementation details."
-                        echo ""
-                        sut_violations=$((sut_violations + 1))
-                        break
-                    fi
+
+                    matched=false
+                    # Check all consecutive segment combinations
+                    for ((i=0; i<${#segments[@]}; i++)); do
+                        combo=""
+                        for ((j=i; j<${#segments[@]}; j++)); do
+                            combo+="${segments[j]}"
+                            if [[ "$combo" == "$symbol" ]]; then
+                                echo "VIOLATION: Test '$test_name' in $test_file references symbol '$symbol'"
+                                sut_violations=$((sut_violations + 1))
+                                matched=true
+                                break 2
+                            fi
+                        done
+                    done
+
+                    [[ "$matched" == true ]] && break
                 done <<< "$symbols"
             done <<< "$test_names"
         done <<< "$changed_test_files"

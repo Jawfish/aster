@@ -19,8 +19,12 @@ MIN_LENGTH=4
 collect_ts_symbols() {
     local dir="$1"
 
-    # Function declarations: function foo() {}
+    # Function declarations without return type: function foo() {}
     ast-grep --pattern 'function $NAME($$$) { $$$BODY }' --lang typescript --json "$dir" 2>/dev/null | \
+        jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true
+
+    # Function declarations with return type: function foo(): Type {}
+    ast-grep --pattern 'function $NAME($$$): $TYPE { $$$BODY }' --lang typescript --json "$dir" 2>/dev/null | \
         jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true
 
     # Class declarations: class Foo {}
@@ -29,6 +33,18 @@ collect_ts_symbols() {
 
     # Arrow functions: const foo = () => {}
     ast-grep --pattern 'const $NAME = ($$$) => $BODY' --lang typescript --json "$dir" 2>/dev/null | \
+        jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true
+
+    # Arrow functions with return type: const foo = (): Type => {}
+    ast-grep --pattern 'const $NAME = ($$$): $TYPE => $BODY' --lang typescript --json "$dir" 2>/dev/null | \
+        jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true
+
+    # Async arrow functions: const foo = async () => {}
+    ast-grep --pattern 'const $NAME = async ($$$) => $BODY' --lang typescript --json "$dir" 2>/dev/null | \
+        jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true
+
+    # Async arrow functions with return type: const foo = async (): Type => {}
+    ast-grep --pattern 'const $NAME = async ($$$): $TYPE => $BODY' --lang typescript --json "$dir" 2>/dev/null | \
         jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true
 }
 
@@ -67,9 +83,14 @@ collect_py_tests() {
         grep '^test_' || true
 }
 
-# Normalize to lowercase for comparison
-normalize() {
-    tr '[:upper:]' '[:lower:]' | tr '_' '\n' | sort -u
+# Normalize symbol: lowercase and remove underscores (UserService -> userservice)
+normalize_symbol() {
+    tr '[:upper:]' '[:lower:]' | tr -d '_'
+}
+
+# Normalize test name: lowercase, keep underscores for word boundary matching
+normalize_test() {
+    tr '[:upper:]' '[:lower:]'
 }
 
 # Main logic
@@ -87,8 +108,8 @@ main() {
         symbols+=$(collect_py_symbols "$SOURCE_DIR")
     fi
 
-    # Filter to unique symbols above minimum length
-    symbols=$(echo "$symbols" | normalize | awk -v min="$MIN_LENGTH" 'length >= min' | sort -u)
+    # Filter to unique symbols above minimum length (exclude test functions)
+    symbols=$(echo "$symbols" | grep -v '^test_' | normalize_symbol | awk -v min="$MIN_LENGTH" 'length >= min' | sort -u)
 
     if [ -z "$symbols" ]; then
         echo "No symbols found in $SOURCE_DIR"
@@ -110,15 +131,31 @@ main() {
     while IFS= read -r test_name; do
         [ -z "$test_name" ] && continue
 
-        normalized_test=$(echo "$test_name" | normalize)
+        # Normalize test name: lowercase, strip quotes, replace spaces/underscores with single delimiter
+        normalized_test=$(echo "$test_name" | tr '[:upper:]' '[:lower:]' | tr -d '"'"'" | tr ' ' '_')
+
+        # Split test name into segments and build all consecutive combinations
+        IFS='_' read -ra segments <<< "$normalized_test"
 
         while IFS= read -r symbol; do
             [ -z "$symbol" ] && continue
 
-            if echo "$normalized_test" | grep -q "^${symbol}$"; then
-                echo "VIOLATION: Test '$test_name' references symbol '$symbol'"
-                violations=$((violations + 1))
-            fi
+            matched=false
+            # Check all consecutive segment combinations
+            for ((i=0; i<${#segments[@]}; i++)); do
+                combo=""
+                for ((j=i; j<${#segments[@]}; j++)); do
+                    combo+="${segments[j]}"
+                    if [[ "$combo" == "$symbol" ]]; then
+                        echo "VIOLATION: Test '$test_name' references symbol '$symbol'"
+                        violations=$((violations + 1))
+                        matched=true
+                        break 2
+                    fi
+                done
+            done
+
+            [[ "$matched" == true ]] && break
         done <<< "$symbols"
     done <<< "$tests"
 
