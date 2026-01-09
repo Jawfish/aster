@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-commit checks..."
+
+echo "Checking YAML formatting..."
+yamlfmt -lint .
+
+echo "Checking shell script formatting..."
+shfmt -d bin/aster scripts/*.sh
+
+echo "Linting shell scripts..."
+shellcheck -e SC2016 bin/aster scripts/*.sh
+
+echo "Linting GitHub Actions..."
+actionlint
+
+echo "All pre-commit checks passed."

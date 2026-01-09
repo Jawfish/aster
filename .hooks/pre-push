@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-push checks..."
+
+echo "Running ast-grep rule tests..."
+./bin/aster test
+
+echo "Running SUT check tests..."
+./scripts/test-sut-check.sh
+
+echo "All pre-push checks passed."

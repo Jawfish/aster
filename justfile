@@ -1,5 +1,11 @@
 # Aster - Cross-language lint rules
 
+# Install git hooks
+init:
+    ln -sf ../../.hooks/pre-commit .git/hooks/pre-commit
+    ln -sf ../../.hooks/pre-push .git/hooks/pre-push
+    @echo "Git hooks installed."
+
 # Run all checks on a target directory
 lint target=".":
     ./bin/aster lint {{target}}
@@ -39,12 +45,12 @@ fmt-yaml:
 
 # Lint shell scripts
 lint-scripts:
-    shfmt -d bin/aster scripts/*.sh
-    shellcheck -e SC2016 bin/aster scripts/*.sh
+    shfmt -d bin/aster scripts/*.sh .hooks/*
+    shellcheck -e SC2016 bin/aster scripts/*.sh .hooks/*
 
 # Format shell scripts
 fmt-scripts:
-    shfmt -w bin/aster scripts/*.sh
+    shfmt -w bin/aster scripts/*.sh .hooks/*
 
 # Lint GitHub Actions workflows
 lint-actions:
