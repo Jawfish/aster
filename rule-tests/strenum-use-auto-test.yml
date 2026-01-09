@@ -1,0 +1,36 @@
+id: strenum-use-auto
+valid:
+  - |
+    class Status(StrEnum):
+        ACTIVE = auto()
+        INACTIVE = auto()
+  - |
+    class Color(Enum):
+        RED = "red"
+  - |
+    class Regular:
+        VALUE = "something"
+  - |
+    class Status(StrEnum):
+        ACTIVE = auto()
+        def method(self):
+            x = "not a member"
+  - |
+    class Status(StrEnum):
+        ACTIVE: str = auto()
+invalid:
+  - |
+    class Status(StrEnum):
+        ACTIVE = "ACTIVE"
+  - |
+    class Status(StrEnum):
+        ACTIVE = "active"
+  - |
+    class Status(StrEnum, Mixin):
+        VALUE = "value"
+  - |
+    class Status(Mixin, StrEnum):
+        VALUE = "value"
+  - |
+    class Status(StrEnum):
+        VALUE: str = "value"
