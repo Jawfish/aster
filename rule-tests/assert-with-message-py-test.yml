@@ -3,6 +3,11 @@ valid:
   - "assert x > 0, 'x must be positive'"
   - "assert user is not None, 'User not found'"
   - "assert len(items) == 3, 'Expected 3 items'"
+  - 'assert x == y, ("message in parentheses")'
+  - |
+    assert x == y, (
+        "multiline message"
+    )
 invalid:
   - "assert x > 0"
   - "assert result == expected"

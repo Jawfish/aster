@@ -36,4 +36,5 @@ rule:
     - kind: assert_statement
     - not:
         has:
+          stopBy: end
           kind: string
