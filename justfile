@@ -23,3 +23,33 @@ test:
 # Show help
 help:
     ./bin/aster help
+
+# === CI Linting ===
+
+# Run all CI linters
+ci: lint-yaml lint-scripts lint-actions
+
+# Lint YAML files
+lint-yaml:
+    yamlfmt -lint .
+
+# Format YAML files
+fmt-yaml:
+    yamlfmt .
+
+# Lint shell scripts
+lint-scripts:
+    shfmt -d bin/aster scripts/*.sh
+    shellcheck -e SC2016 bin/aster scripts/*.sh
+
+# Format shell scripts
+fmt-scripts:
+    shfmt -w bin/aster scripts/*.sh
+
+# Lint GitHub Actions workflows
+lint-actions:
+    actionlint
+
+# Run CI locally with act
+act *args:
+    act --container-architecture linux/amd64 {{args}}
