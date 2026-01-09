@@ -4,13 +4,13 @@
 lint target=".":
     ./bin/aster lint {{target}}
 
-# Run only ast-grep rules
-scan target=".":
-    ./bin/aster scan {{target}}
+# Run checks on changed lines only (vs main or specified base)
+diff base="main":
+    ./bin/aster diff {{base}}
 
-# Run only test naming check
-check-names target=".":
-    ./bin/aster check-names {{target}}
+# Run checks on staged changes only
+staged:
+    ./bin/aster staged
 
 # Test the rules themselves
 test:
