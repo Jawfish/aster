@@ -1,0 +1,43 @@
+id: strenum-use-auto
+language: Python
+severity: error
+message: |
+  StrEnum members should use auto() instead of explicit string values.
+
+  Using auto() avoids duplication between the member name and value:
+  - Reduces typo risk
+  - Keeps member names and values in sync
+  - Cleaner, more maintainable code
+
+  Example refactoring:
+    # Before: duplicated values
+    class Status(StrEnum):
+        ACTIVE = "ACTIVE"
+        INACTIVE = "INACTIVE"
+
+    # After: auto-generated values
+    class Status(StrEnum):
+        ACTIVE = auto()
+        INACTIVE = auto()
+
+  Note: auto() generates lowercase values by default in StrEnum.
+  If you need specific casing, consider overriding _generate_next_value_.
+rule:
+  all:
+    - any:
+        - pattern: $NAME = $VALUE
+        - pattern: "$NAME: $TYPE = $VALUE"
+    - inside:
+        stopBy: end
+        any:
+          - pattern: "class $CLASS(StrEnum): $$$"
+          - pattern: "class $CLASS(StrEnum, $$$BASES): $$$"
+          - pattern: "class $CLASS($$$BASES, StrEnum): $$$"
+          - pattern: "class $CLASS($$$BASES, StrEnum, $$$MORE): $$$"
+    - not:
+        any:
+          - pattern: $NAME = auto()
+          - pattern: "$NAME: $TYPE = auto()"
+constraints:
+  NAME:
+    regex: "^[A-Z]"

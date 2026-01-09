@@ -1,0 +1,24 @@
+id: prefer-strenum
+language: Python
+severity: error
+message: |
+  Use StrEnum instead of inheriting from both str and Enum.
+
+  StrEnum is available in Python 3.11+ and provides cleaner syntax:
+  - Automatically makes enum values strings
+  - Use auto() for member values to avoid duplication
+
+  Example refactoring:
+    # Before: verbose inheritance
+    class Status(str, Enum):
+        ACTIVE = "ACTIVE"
+        INACTIVE = "INACTIVE"
+
+    # After: cleaner with StrEnum and auto()
+    class Status(StrEnum):
+        ACTIVE = auto()
+        INACTIVE = auto()
+rule:
+  any:
+    - pattern: "class $NAME(str, Enum): $$$"
+    - pattern: "class $NAME(Enum, str): $$$"
