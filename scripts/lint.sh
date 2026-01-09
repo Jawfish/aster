@@ -15,13 +15,13 @@ exit_code=0
 
 echo "=== Running ast-grep rules ==="
 if ! ast-grep scan --config "$ASTER_ROOT/sgconfig.yml" "$TARGET_DIR"; then
-    exit_code=1
+	exit_code=1
 fi
 
 echo ""
 echo "=== Checking test naming conventions ==="
 if ! "$SCRIPT_DIR/check-sut-names.sh" "$TARGET_DIR" "$TARGET_DIR"; then
-    exit_code=1
+	exit_code=1
 fi
 
 exit $exit_code

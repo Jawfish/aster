@@ -1,0 +1,40 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  lint-yaml:
+    runs-on: ubuntu-latest
+    container: ghcr.io/google/yamlfmt:latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check YAML formatting
+        run: yamlfmt -lint .
+  lint-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lint shell scripts
+        uses: luizm/action-sh-checker@v0.9.0
+        env:
+          SHELLCHECK_OPTS: -e SC2016
+  lint-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lint GitHub Actions
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install ast-grep
+        run: npm install -g @ast-grep/cli
+      - name: Run ast-grep rule tests
+        run: ./bin/aster test
+      - name: Run SUT check tests
+        run: ./scripts/test-sut-check.sh
