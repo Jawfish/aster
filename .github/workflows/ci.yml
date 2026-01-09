@@ -1,0 +1,24 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container: ghcr.io/google/yamlfmt:latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check YAML formatting
+        run: yamlfmt -lint .
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install ast-grep
+        run: npm install -g @ast-grep/cli
+      - name: Run ast-grep rule tests
+        run: ./bin/aster test
+      - name: Run SUT check tests
+        run: ./scripts/test-sut-check.sh
