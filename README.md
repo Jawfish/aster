@@ -290,6 +290,42 @@ of how the system behaves, not suggestions for how it might behave.
 
 Detects test names that reference implementation symbols (function/class names). Tests should describe behavior, not implementation details.
 
+## Contributing
+
+### Setup
+
+Install git hooks after cloning:
+
+```bash
+just init
+```
+
+This installs:
+- **pre-commit**: Runs linters (yamlfmt, shfmt, shellcheck, actionlint)
+- **pre-push**: Runs tests (ast-grep rules, SUT check)
+
+### Commands
+
+```bash
+just ci              # Run all linters
+just test            # Run ast-grep rule tests
+just lint-yaml       # Check YAML formatting
+just lint-scripts    # Check shell scripts (shfmt + shellcheck)
+just lint-actions    # Lint GitHub Actions workflows
+just fmt-yaml        # Format YAML files
+just fmt-scripts     # Format shell scripts
+just act             # Run CI locally with act
+```
+
+### Requirements
+
+- [ast-grep](https://ast-grep.github.io/)
+- [jq](https://jqlang.github.io/jq/)
+- [yamlfmt](https://github.com/google/yamlfmt)
+- [shfmt](https://github.com/mvdan/sh)
+- [shellcheck](https://www.shellcheck.net/)
+- [actionlint](https://github.com/rhysd/actionlint)
+
 ## License
 
 MIT
