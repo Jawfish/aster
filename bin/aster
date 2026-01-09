@@ -45,13 +45,10 @@ aster - Cross-language lint rules
 
 Usage:
     aster lint <target>        Run all checks on target directory (default)
-    aster diff [base]          Run ast-grep rules on changed lines vs base (default: main)
-    aster staged               Run ast-grep rules on staged changes
+    aster diff [base]          Run all checks on changed lines vs base (default: main)
+    aster staged               Run all checks on staged changes
     aster test                 Test the rules themselves
     aster help                 Show this help
-
-Note: diff/staged run ast-grep rules only. Full lint also includes SUT name detection
-which requires cross-file analysis.
 
 Examples:
     aster lint ~/code/myproject     # Full lint on directory

@@ -40,7 +40,7 @@ fi
 
 # Create a temporary file to store changed line ranges
 line_ranges=$(mktemp)
-trap "rm -f $line_ranges" EXIT
+trap "rm -f $line_ranges /tmp/filtered_violations.json 2>/dev/null" EXIT
 
 # Parse diff to extract changed line numbers per file
 # Format: file:start_line:end_line
@@ -61,58 +61,140 @@ $DIFF_CMD --unified=0 | awk '
     }
 ' > "$line_ranges"
 
-# Run ast-grep on changed files and filter to changed lines
 echo "Scanning changes against $BASE_REF..."
 echo ""
 
-violations=0
+exit_code=0
+
+# === AST-GREP RULES ===
+echo "=== Running ast-grep rules ==="
 
 # Run ast-grep and get JSON output
 ast_output=$(ast-grep scan --config "$ASTER_ROOT/sgconfig.yml" --json $changed_files 2>/dev/null || true)
 
-if [[ -z "$ast_output" || "$ast_output" == "[]" ]]; then
-    echo "No violations found in changed code."
-    exit 0
-fi
+if [[ -n "$ast_output" && "$ast_output" != "[]" ]]; then
+    # Filter violations to only those on changed lines
+    echo "$ast_output" | jq -r --slurpfile ranges <(
+        cat "$line_ranges" | awk -F: '{print "{\"file\":\"" $1 "\",\"start\":" $2 ",\"end\":" $3 "}"}'
+    ) '
+        .[] |
+        . as $violation |
+        $violation.file as $file |
+        $violation.range.start.line as $line |
+        if any($ranges[]; .file == $file and .start <= ($line + 1) and ($line + 1) <= .end) then
+            $violation
+        else
+            empty
+        end
+    ' | jq -s '.' > /tmp/filtered_violations.json
 
-# Filter violations to only those on changed lines
-echo "$ast_output" | jq -r --slurpfile ranges <(
-    # Convert line ranges to JSON for jq
-    cat "$line_ranges" | awk -F: '{print "{\"file\":\"" $1 "\",\"start\":" $2 ",\"end\":" $3 "}"}'
-) '
-    .[] |
-    . as $violation |
-    $violation.file as $file |
-    $violation.range.start.line as $line |
+    filtered_count=$(jq 'length' /tmp/filtered_violations.json)
 
-    # Check if this violation is on a changed line
-    if any($ranges[]; .file == $file and .start <= ($line + 1) and ($line + 1) <= .end) then
-        $violation
+    if [[ "$filtered_count" != "0" ]]; then
+        jq -r '.[] |
+            "error[\(.ruleId)]: \(.message)\n" +
+            "  ┌─ \(.file):\(.range.start.line + 1):\(.range.start.column + 1)\n" +
+            "  │\n" +
+            "  │ \(.text // .matchedCode // "")\n" +
+            "  │\n"
+        ' /tmp/filtered_violations.json
+        echo "Found $filtered_count ast-grep violation(s) in changed code."
+        exit_code=1
     else
-        empty
-    end
-' | jq -s '.' > /tmp/filtered_violations.json
-
-# Check if we have any violations after filtering
-filtered_count=$(jq 'length' /tmp/filtered_violations.json)
-
-if [[ "$filtered_count" == "0" ]]; then
-    echo "No violations found in changed lines."
-    rm -f /tmp/filtered_violations.json
-    exit 0
+        echo "No ast-grep violations in changed lines."
+    fi
+else
+    echo "No ast-grep violations in changed lines."
 fi
 
-# Pretty print the filtered violations (full message)
-jq -r '.[] |
-    "error[\(.ruleId)]: \(.message)\n" +
-    "  ┌─ \(.file):\(.range.start.line + 1):\(.range.start.column + 1)\n" +
-    "  │\n" +
-    "  │ \(.text // .matchedCode // "")\n" +
-    "  │\n"
-' /tmp/filtered_violations.json
+# === SUT NAME CHECK ===
+echo ""
+echo "=== Checking test naming conventions ==="
+
+# Get changed test files only
+changed_test_files=$(echo "$changed_files" | grep -E '(test_.*\.py|\.test\.tsx?|\.spec\.tsx?)$' || true)
+
+if [[ -z "$changed_test_files" ]]; then
+    echo "No test files changed."
+else
+    # Run SUT check on changed test files only (symbols from whole codebase)
+    # The check-sut-names script needs source dir and test dir
+    # We pass "." for source (to get all symbols) but filter test output
+
+    # Create temp file with just changed test file paths
+    changed_tests_file=$(mktemp)
+    echo "$changed_test_files" > "$changed_tests_file"
+
+    # Run a modified SUT check that only looks at specific test files
+    sut_violations=0
+
+    # Collect all symbols from the codebase
+    symbols=""
+    if command -v ast-grep &> /dev/null; then
+        # TypeScript/JavaScript symbols
+        symbols+=$(ast-grep --pattern 'function $NAME($$$) { $$$BODY }' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'class $NAME { $$$BODY }' --lang typescript --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        # Python symbols
+        symbols+=$(ast-grep --pattern 'def $NAME($$$): $$$BODY' --lang python --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+        symbols+=$'\n'
+        symbols+=$(ast-grep --pattern 'class $NAME: $$$BODY' --lang python --json . 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+    fi
+
+    # Normalize and filter symbols (min length 4)
+    symbols=$(echo "$symbols" | tr '[:upper:]' '[:lower:]' | tr '_' '\n' | awk 'length >= 4' | sort -u)
+
+    if [[ -n "$symbols" ]]; then
+        # Check test names in changed test files against symbols
+        while IFS= read -r test_file; do
+            [[ -z "$test_file" ]] && continue
+            [[ ! -f "$test_file" ]] && continue
+
+            # Get test names from this file
+            test_names=""
+            if [[ "$test_file" =~ \.py$ ]]; then
+                test_names=$(ast-grep --pattern 'def $NAME($$$): $$$BODY' --lang python --json "$test_file" 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null | grep '^test_' || true)
+            else
+                test_names=$(ast-grep --pattern 'test($NAME, $$$)' --lang typescript --json "$test_file" 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+                test_names+=$'\n'
+                test_names+=$(ast-grep --pattern 'it($NAME, $$$)' --lang typescript --json "$test_file" 2>/dev/null | jq -r '.[].metaVariables.single.NAME.text // empty' 2>/dev/null || true)
+            fi
+
+            # Check each test name against symbols
+            while IFS= read -r test_name; do
+                [[ -z "$test_name" ]] && continue
+                normalized_test=$(echo "$test_name" | tr '[:upper:]' '[:lower:]' | tr '_' '\n')
+
+                while IFS= read -r symbol; do
+                    [[ -z "$symbol" ]] && continue
+                    if echo "$normalized_test" | grep -q "^${symbol}$"; then
+                        echo "error[sut-name]: Test '$test_name' in $test_file references symbol '$symbol'"
+                        echo "  Tests should describe behavior, not reference implementation details."
+                        echo ""
+                        sut_violations=$((sut_violations + 1))
+                        break
+                    fi
+                done <<< "$symbols"
+            done <<< "$test_names"
+        done <<< "$changed_test_files"
+    fi
+
+    rm -f "$changed_tests_file"
+
+    if [[ "$sut_violations" -gt 0 ]]; then
+        echo "Found $sut_violations SUT naming violation(s) in changed test files."
+        exit_code=1
+    else
+        echo "No SUT naming violations in changed test files."
+    fi
+fi
 
 echo ""
-echo "Found $filtered_count violation(s) in changed code."
+if [[ "$exit_code" -eq 0 ]]; then
+    echo "All checks passed on changed code."
+else
+    echo "Violations found in changed code."
+fi
 
-rm -f /tmp/filtered_violations.json
-exit 1
+exit $exit_code
