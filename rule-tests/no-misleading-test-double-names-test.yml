@@ -1,0 +1,10 @@
+id: no-misleading-test-double-names
+valid:
+  - "const fakeUser = { id: 1, name: 'Alice' };"
+  - "const stubService = new FakeService();"
+  - "function createFakeEventQueue() { return new EventQueue(); }"
+  - "const createNullClient = () => new NullClient();"
+invalid:
+  - "const mockUser = { id: 1, name: 'Alice' };"
+  - "const mockService = new FakeService();"
+  - "function createMockEventQueue() { return new EventQueue(); }"

@@ -1,0 +1,11 @@
+id: no-test-name-with-method-names
+valid:
+  - "test('damage is attack power minus defense', () => {});"
+  - "test('user is fetched by unique identifier', () => {});"
+  - "test('player with zero health is dead', () => {});"
+  - "it('returns error for invalid input', () => {});"
+invalid:
+  - "test('calculateDamage returns correct value', () => {});"
+  - "test('getUserById fetches from database', () => {});"
+  - "test('isPlayerDead checks zero health', () => {});"
+  - "it('fetchUser returns user object', () => {});"

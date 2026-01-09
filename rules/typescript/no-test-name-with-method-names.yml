@@ -1,0 +1,42 @@
+id: no-test-name-with-method-names
+language: TypeScript
+severity: error
+message: |
+  Test names should describe behavior, not reference implementation methods.
+
+  Our test naming philosophy:
+  - Focus on what the system does, not how it's tested
+  - Use plain English that non-programmers can understand
+  - Follow the ACE framework: Action, Condition, Expectation
+  - Tests document behavior, not code structure
+
+  Why avoid method names in tests:
+  - Tests coupled to method names break when you refactor
+  - Method names are implementation details, not user behavior
+  - Tests should survive renaming and restructuring
+  - Behavior is what matters, not the specific function name
+
+  Naming pattern to follow:
+  1. **Action**: What functionality is being tested
+  2. **Condition**: Under what circumstances
+  3. **Expectation**: With what expected result
+
+  Example refactoring:
+    // Before: References method name
+    test("calculateDamage returns correct value")
+    test("getUserById fetches from database")
+    test("isPlayerDead checks zero health")
+
+    // After: Describes behavior
+    test("damage is attack power minus defense")
+    test("user is fetched by unique identifier")
+    test("player with zero health is dead")
+
+  See testing guidelines for more details and examples.
+rule:
+  any:
+    - pattern: test($NAME, $$$)
+    - pattern: it($NAME, $$$)
+constraints:
+  NAME:
+    regex: \b(get|set|is|has|can|will|create|update|delete|remove|add|insert|fetch|load|save|clear|reset|initialize|calculate|compute|process|handle|validate|check|verify|run|execute|apply|perform|take|give|make|find|search|filter|sort|map|reduce|parse|format|convert|transform|render|display|show|hide|enable|disable|start|stop|open|close|read|write|send|receive)[A-Z]

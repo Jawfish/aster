@@ -1,0 +1,33 @@
+id: no-test-name-with-method-names-py
+language: Python
+severity: error
+message: |
+  Test names should describe behavior, not reference implementation methods.
+
+  Our test naming philosophy:
+  - Focus on what the system does, not how it's tested
+  - Use plain English that non-programmers can understand
+  - Follow the ACE framework: Action, Condition, Expectation
+  - Tests document behavior, not code structure
+
+  Why avoid method names in tests:
+  - Tests coupled to method names break when you refactor
+  - Method names are implementation details, not user behavior
+  - Tests should survive renaming and restructuring
+  - Behavior is what matters, not the specific function name
+
+  Example refactoring:
+    # Before: References method name (starts with verb)
+    def test_calculate_damage_returns_correct_value():
+    def test_get_user_by_id_fetches_from_database():
+
+    # After: Describes behavior (starts with noun/subject)
+    def test_damage_is_attack_power_minus_defense():
+    def test_user_is_fetched_by_unique_identifier():
+
+  See testing guidelines for more details and examples.
+rule:
+  pattern: "def $NAME($$$): $$$BODY"
+constraints:
+  NAME:
+    regex: ^test_(get|set|is|has|can|will|create|update|delete|remove|add|insert|fetch|load|save|clear|reset|initialize|calculate|compute|process|handle|validate|check|verify|run|execute|apply|perform|take|give|make|find|search|filter|sort|map|reduce|parse|format|convert|transform|render|display|show|hide|enable|disable|start|stop|open|close|read|write|send|receive)_

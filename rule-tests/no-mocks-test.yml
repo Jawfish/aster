@@ -1,0 +1,21 @@
+id: no-mocks
+valid:
+  - "const fake = new FakeUserService();"
+  - "const stub = { getUser: () => null };"
+  - "import { render } from '@testing-library/react';"
+  - "const result = await fetchUser(123);"
+invalid:
+  - "vi.mock('./module');"
+  - "vi.spyOn(obj, 'method');"
+  - "const fn = vi.fn();"
+  - "vi.mocked(someFunction);"
+  - "vi.stubGlobal('fetch', fakeFetch);"
+  - "vi.stubEnv('API_URL', 'http://test.com');"
+  - "jest.mock('./module');"
+  - "jest.spyOn(obj, 'method');"
+  - "const fn = jest.fn();"
+  - "sinon.stub(obj, 'method');"
+  - "sinon.spy(obj, 'method');"
+  - "fn.mockResolvedValue({ data: 'test' });"
+  - "fn.mockReturnValue(42);"
+  - "fn.mockImplementation(() => 'test');"

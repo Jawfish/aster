@@ -1,0 +1,14 @@
+id: no-mocks-py
+valid:
+  - "from collections import defaultdict"
+  - "fake = FakeUserRepository()"
+  - "import pytest"
+invalid:
+  - "from unittest.mock import Mock, patch"
+  - "from unittest import mock"
+  - "import mock"
+  - "from pytest_mock import mocker"
+  - "obj = Mock()"
+  - "obj = MagicMock(return_value=42)"
+  - "patch('module.thing')"
+  - "mock.patch('module.thing')"

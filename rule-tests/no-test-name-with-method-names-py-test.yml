@@ -1,0 +1,11 @@
+id: no-test-name-with-method-names-py
+valid:
+  - "def test_damage_is_attack_power_minus_defense(): pass"
+  - "def test_user_is_fetched_by_unique_identifier(): pass"
+  - "def test_player_with_zero_health_is_dead(): pass"
+  - "def test_returns_error_for_invalid_input(): pass"
+invalid:
+  - "def test_calculate_damage_returns_correct_value(): pass"
+  - "def test_get_user_by_id_fetches_from_database(): pass"
+  - "def test_fetch_user_returns_user_object(): pass"
+  - "def test_validate_input_rejects_empty_string(): pass"

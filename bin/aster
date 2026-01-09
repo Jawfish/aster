@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+#
+# aster - Cross-language lint rules
+#
+# Usage:
+#   aster scan <target>       Run ast-grep rules on target directory
+#   aster diff [base]         Run rules only on changed lines (vs main or base)
+#   aster staged              Run rules only on staged changes
+#   aster check-names <target> Check for SUT names in tests
+#   aster lint <target>       Run all checks
+#   aster test                Test the rules themselves
+
+set -euo pipefail
+
+ASTER_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+cmd_scan() {
+    local target="${1:-.}"
+    ast-grep scan --config "$ASTER_ROOT/sgconfig.yml" "$target"
+}
+
+cmd_diff() {
+    local base="${1:-main}"
+    "$ASTER_ROOT/scripts/scan-diff.sh" "$base"
+}
+
+cmd_staged() {
+    "$ASTER_ROOT/scripts/scan-diff.sh" --staged
+}
+
+cmd_check_names() {
+    local target="${1:-.}"
+    "$ASTER_ROOT/scripts/check-sut-names.sh" "$target" "$target"
+}
+
+cmd_lint() {
+    local target="${1:-.}"
+    local exit_code=0
+
+    echo "=== Running ast-grep rules ==="
+    cmd_scan "$target" || exit_code=1
+
+    echo ""
+    echo "=== Checking test naming conventions ==="
+    cmd_check_names "$target" || exit_code=1
+
+    exit $exit_code
+}
+
+cmd_test() {
+    ast-grep test --config "$ASTER_ROOT/sgconfig.yml" --skip-snapshot-tests
+}
+
+cmd_help() {
+    cat <<EOF
+aster - Cross-language lint rules
+
+Usage:
+    aster scan <target>        Run ast-grep rules on target directory
+    aster diff [base]          Run rules only on changed lines vs base (default: main)
+    aster staged               Run rules only on staged changes
+    aster check-names <target> Check for SUT names in tests
+    aster lint <target>        Run all checks (default)
+    aster test                 Test the rules themselves
+    aster help                 Show this help
+
+Examples:
+    aster scan ~/code/myproject     # Scan entire directory
+    aster diff                      # Check only changes vs main
+    aster diff origin/develop       # Check only changes vs develop
+    aster staged                    # Check only staged changes (pre-commit)
+    aster lint .
+    aster test
+EOF
+}
+
+case "${1:-lint}" in
+    scan)        shift; cmd_scan "$@" ;;
+    diff)        shift; cmd_diff "$@" ;;
+    staged)      cmd_staged ;;
+    check-names) shift; cmd_check_names "$@" ;;
+    lint)        shift; cmd_lint "$@" ;;
+    test)        cmd_test ;;
+    help|--help|-h) cmd_help ;;
+    *)           cmd_lint "$@" ;;
+esac

@@ -1,0 +1,9 @@
+id: assert-with-message-py
+valid:
+  - "assert x > 0, 'x must be positive'"
+  - "assert user is not None, 'User not found'"
+  - "assert len(items) == 3, 'Expected 3 items'"
+invalid:
+  - "assert x > 0"
+  - "assert result == expected"
+  - "assert user is not None"

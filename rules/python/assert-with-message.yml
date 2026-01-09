@@ -1,0 +1,39 @@
+id: assert-with-message-py
+language: Python
+severity: error
+message: |
+  Assertions without messages make test failures cryptic and waste debugging time.
+
+  Our testing philosophy:
+  - Every assertion should explain what was being verified
+  - Test failures should be self-documenting
+  - Fail fast with clear, actionable information
+  - A failing test should explain the problem without reading test code
+
+  Why this matters:
+  - "AssertionError" alone requires reading source code to understand the failure
+  - CI logs with bare assertions are nearly useless for diagnosis
+  - Good assertion messages reduce debugging time from hours to seconds
+  - Messages serve as documentation for what the test is actually checking
+
+  What makes a good assertion message:
+  1. State what was expected vs what was received
+  2. Include relevant variable values or context
+  3. Describe the condition being verified in plain English
+  4. Be specific enough to locate the issue without reading code
+
+  Example refactoring:
+    # Before: No context
+    assert result == expected
+    assert user is not None
+
+    # After: Self-documenting failures
+    assert result == expected, f"Expected {expected}, got {result}"
+    assert user is not None, f"User {user_id} not found in database"
+    assert response.status_code == 200, f"API returned {response.status_code}: {response.text}"
+rule:
+  all:
+    - kind: assert_statement
+    - not:
+        has:
+          kind: string

@@ -1,0 +1,46 @@
+id: assert-with-message
+language: TypeScript
+severity: error
+message: |
+  Errors thrown without messages make debugging difficult and waste developer time.
+
+  Our error handling philosophy:
+  - Every error should explain what went wrong and why
+  - Error messages are documentation for future debuggers
+  - Fail fast with clear, actionable information
+  - Errors should help identify the problem, not just signal it
+
+  Why this matters:
+  - Stack traces show where an error occurred, but not what condition triggered it
+  - "Error" alone requires reading source code to understand the failure
+  - Good error messages reduce debugging time from hours to seconds
+  - Production errors are often the only information available for diagnosis
+
+  What makes a good error message:
+  1. State what was expected vs what was received
+  2. Include relevant variable values or identifiers
+  3. Suggest what might have caused the problem
+  4. Be specific enough to locate the issue without reading code
+
+  Example refactoring:
+    // Before: No context
+    throw new Error();
+    throw new Error("");
+
+    // After: Actionable information
+    throw new Error(`User ${userId} not found in database`);
+    throw new Error(`Expected positive number, got ${value}`);
+    throw new Error(`API returned ${status}: ${body}`);
+rule:
+  any:
+    - pattern: throw new Error()
+    - pattern: throw new TypeError()
+    - pattern: throw new RangeError()
+    - pattern: throw new ReferenceError()
+    - pattern: throw new SyntaxError()
+    - pattern: throw new Error("")
+    - pattern: throw new Error('')
+    - pattern: throw new TypeError("")
+    - pattern: throw new TypeError('')
+    - pattern: throw new RangeError("")
+    - pattern: throw new RangeError('')

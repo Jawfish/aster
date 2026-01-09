@@ -1,0 +1,52 @@
+id: no-mocks-py
+language: Python
+severity: error
+message: |
+  Mocking creates brittle tests that verify implementation rather than behavior.
+
+  Our testing philosophy:
+  - Focus on behavior, not implementation details
+  - Use state-based testing over interaction-based testing
+  - Tests should verify what the code does, not how it does it
+  - Prefer dependency injection with test doubles over mocking
+
+  Why mocking is problematic:
+  - Tests break when you refactor, even if behavior is unchanged
+  - Mocks test a simulation, not the actual code that runs in production
+  - Mock configurations must be updated across many tests when dependencies change
+  - Complex mock setup obscures what's actually being tested
+
+  Instead of mocking:
+  1. Extract pure logic into separate functions that don't need mocking
+  2. Use constructor injection or factory methods to provide test implementations
+  3. Create "nullable" versions of infrastructure classes with controllable behavior
+
+  Example refactoring:
+    # Before: Mocking with patch
+    @patch('mymodule.api_client')
+    def test_fetch_user(mock_client):
+        mock_client.get.return_value = {'name': 'Alice'}
+        result = fetch_user(123)
+        mock_client.get.assert_called_with('/users/123')
+
+    # After: Dependency injection with fake
+    def test_fetch_user():
+        fake_client = FakeApiClient(responses={'/users/123': {'name': 'Alice'}})
+        service = UserService(client=fake_client)
+        result = service.fetch_user(123)
+        assert result.name == 'Alice'
+
+  See testing guidelines for more details on behavior-driven testing.
+rule:
+  any:
+    - pattern: from unittest.mock import $$$NAMES
+    - pattern: from unittest import mock
+    - pattern: import mock
+    - pattern: from pytest_mock import $$$NAMES
+    - pattern: Mock($$$)
+    - pattern: MagicMock($$$)
+    - pattern: AsyncMock($$$)
+    - pattern: patch($$$)
+    - pattern: mock.patch($$$)
+    - pattern: monkeypatch.setattr($$$)
+    - pattern: monkeypatch.setenv($$$)

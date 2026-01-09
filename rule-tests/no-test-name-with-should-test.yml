@@ -1,0 +1,11 @@
+id: no-test-name-with-should
+valid:
+  - "test('player respawns at checkpoint', () => {});"
+  - "test('game pauses when window loses focus', () => {});"
+  - "it('returns null when user not found', () => {});"
+  - "test('damage does not exceed max health', () => {});"
+invalid:
+  - "test('player should respawn at checkpoint', () => {});"
+  - "test('game should pause when window loses focus', () => {});"
+  - "it('should return null when user not found', () => {});"
+  - "test('damage should not exceed max health', () => {});"

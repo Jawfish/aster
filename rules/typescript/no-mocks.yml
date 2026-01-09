@@ -1,0 +1,67 @@
+id: no-mocks
+language: TypeScript
+severity: error
+message: |
+  Mocking creates brittle tests that verify implementation rather than behavior.
+
+  Our testing philosophy:
+  - Focus on behavior, not implementation details
+  - Use state-based testing over interaction-based testing
+  - Tests should verify what the code does, not how it does it
+  - Prefer dependency injection with test doubles over mocking
+
+  Why mocking is problematic:
+  - Tests break when you refactor, even if behavior is unchanged
+  - Mocks test a simulation, not the actual code that runs in production
+  - Mock configurations must be updated across many tests when dependencies change
+  - Complex mock setup obscures what's actually being tested
+
+  Instead of mocking:
+  1. Extract pure logic into separate functions that don't need mocking
+  2. Use constructor injection or factory methods to provide test implementations
+  3. Create "nullable" versions of infrastructure classes with controllable behavior
+
+  Example refactoring:
+    // Before: Mocking a module
+    vi.mock('./api', () => ({ fetchUser: vi.fn() }))
+
+    // After: Dependency injection
+    class UserService {
+      constructor(private api: ApiClient) {}
+      static createNull(responses = {}) {
+        return new UserService(new FakeApiClient(responses));
+      }
+    }
+
+  See testing guidelines for more details on behavior-driven testing.
+rule:
+  any:
+    # Vitest mocking functions
+    - pattern: vi.mock($$$)
+    - pattern: vi.spyOn($$$)
+    - pattern: vi.fn($$$)
+    - pattern: vi.fn()
+    - pattern: vi.doMock($$$)
+    - pattern: vi.mocked($$$)
+    - pattern: vi.stubGlobal($$$)
+    - pattern: vi.stubEnv($$$)
+    # Jest mocking functions
+    - pattern: jest.mock($$$)
+    - pattern: jest.spyOn($$$)
+    - pattern: jest.fn($$$)
+    - pattern: jest.fn()
+    - pattern: jest.doMock($$$)
+    # Sinon
+    - pattern: sinon.stub($$$)
+    - pattern: sinon.spy($$$)
+    - pattern: sinon.mock($$$)
+    - pattern: sinon.fake($$$)
+    # Mock method chains (mockResolvedValue, mockReturnValue, etc.)
+    - pattern: $_.mockResolvedValue($$$)
+    - pattern: $_.mockResolvedValueOnce($$$)
+    - pattern: $_.mockRejectedValue($$$)
+    - pattern: $_.mockRejectedValueOnce($$$)
+    - pattern: $_.mockReturnValue($$$)
+    - pattern: $_.mockReturnValueOnce($$$)
+    - pattern: $_.mockImplementation($$$)
+    - pattern: $_.mockImplementationOnce($$$)

@@ -1,0 +1,47 @@
+id: no-misleading-test-double-names
+language: TypeScript
+severity: error
+message: |
+  The term "mock" has a specific meaning in testing and should only be used for interaction verification.
+
+  Our testing philosophy distinguishes between:
+  - **Mocks**: Test doubles that verify method calls and interactions (vi.mock, vi.spyOn)
+  - **Fakes**: Test doubles with working implementations but simplified behavior
+  - **Nullables**: Test doubles with "off switches" to prevent external interactions
+
+  Why naming matters:
+  - "Mock" implies interaction-based testing, which we avoid
+  - Using "mock" for fakes/nullables creates conceptual confusion
+  - Clear naming helps maintain our state-based testing philosophy
+
+  Naming conventions:
+  1. Use `createFake*` for objects with controlled, working behavior
+  2. Use `createNull*` for objects following the nullables pattern
+  3. Reserve "mock" prefix only for actual vitest mocks (which we avoid)
+
+  Example refactoring:
+    // Before: Misleading name
+    const mockUser = { id: 1, name: 'Alice' };
+    function createMockEventQueue() { return new EventQueue(); }
+
+    // After: Clear intent
+    const fakeUser = { id: 1, name: 'Alice' };
+    function createFakeEventQueue() { return new EventQueue(); }
+
+  See testing guidelines for more details on test double naming.
+rule:
+  any:
+    # Variables named mock* (object literals, new instances, etc.)
+    - pattern: const $NAME = $VAL
+    - pattern: let $NAME = $VAL
+    - pattern: var $NAME = $VAL
+    # Functions named createMock*
+    - pattern: function $NAME($$$) { $$$BODY }
+    # Arrow functions named createMock*
+    - pattern: const $NAME = ($$$) => $BODY
+constraints:
+  NAME:
+    regex: ^(mock[A-Z]|createMock)
+  VAL:
+    not:
+      regex: vi\.(fn|mock|spyOn)

@@ -1,0 +1,5 @@
+ruleDirs:
+  - rules/typescript
+  - rules/python
+testConfigs:
+  - testDir: rule-tests

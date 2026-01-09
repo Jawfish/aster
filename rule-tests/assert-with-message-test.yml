@@ -1,0 +1,9 @@
+id: assert-with-message
+valid:
+  - "throw new Error('User not found');"
+  - "throw new TypeError('Expected string');"
+  - "throw new Error(`User ${id} not found`);"
+invalid:
+  - "throw new Error();"
+  - "throw new TypeError();"
+  - "throw new Error('');"

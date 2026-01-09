@@ -1,0 +1,9 @@
+id: no-test-name-with-should-py
+valid:
+  - "def test_player_respawns_at_checkpoint(): pass"
+  - "def test_game_pauses_when_window_loses_focus(): pass"
+  - "def test_damage_does_not_exceed_max_health(): pass"
+invalid:
+  - "def test_player_should_respawn_at_checkpoint(): pass"
+  - "def test_game_should_pause_when_window_loses_focus(): pass"
+  - "def test_damage_should_not_exceed_max_health(): pass"
