@@ -2,6 +2,10 @@
 
 Cross-language lint rules for testing best practices. Enforces behavior-driven testing patterns and discourages mocking in TypeScript and Python codebases.
 
+> **Note:** This is a highly opinionated tool built for my personal workflow. The rules reflect my
+> own philosophy and may not align with yours. Feel free to use it, fork it, or take inspiration from
+> it.
+
 ## Installation
 
 Requires [ast-grep](https://ast-grep.github.io/) and [jq](https://jqlang.github.io/jq/).
@@ -301,6 +305,7 @@ just init
 ```
 
 This installs:
+
 - **pre-commit**: Runs linters (yamlfmt, shfmt, shellcheck, actionlint)
 - **pre-push**: Runs tests (ast-grep rules, SUT check)
 
