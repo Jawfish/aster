@@ -4,8 +4,12 @@
 lint target=".":
     ./bin/aster lint {{target}}
 
-# Run checks on changed lines only (vs main or specified base)
-diff base="main":
+# Run checks on unstaged changes (like git diff)
+diff:
+    ./bin/aster diff
+
+# Run checks on changes vs a base branch
+diff-base base:
     ./bin/aster diff {{base}}
 
 # Run checks on staged changes only

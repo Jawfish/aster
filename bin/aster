@@ -4,8 +4,9 @@
 #
 # Usage:
 #   aster lint <target>       Run all checks on target directory
-#   aster diff [base]         Run all checks only on changed lines (vs main or base)
-#   aster staged              Run all checks only on staged changes
+#   aster diff                Run all checks on unstaged changes (like git diff)
+#   aster diff <base>         Run all checks on changes vs base branch
+#   aster staged              Run all checks on staged changes
 #   aster test                Test the rules themselves
 
 set -euo pipefail
@@ -27,8 +28,7 @@ cmd_lint() {
 }
 
 cmd_diff() {
-    local base="${1:-main}"
-    "$ASTER_ROOT/scripts/scan-diff.sh" "$base"
+    "$ASTER_ROOT/scripts/scan-diff.sh" "$@"
 }
 
 cmd_staged() {
@@ -45,7 +45,8 @@ aster - Cross-language lint rules
 
 Usage:
     aster lint <target>        Run all checks on target directory (default)
-    aster diff [base]          Run all checks on changed lines vs base (default: main)
+    aster diff                 Run all checks on unstaged changes (like git diff)
+    aster diff <base>          Run all checks on changes vs base branch
     aster staged               Run all checks on staged changes
     aster test                 Test the rules themselves
     aster help                 Show this help
@@ -53,7 +54,8 @@ Usage:
 Examples:
     aster lint ~/code/myproject     # Full lint on directory
     aster lint .                    # Full lint on current directory
-    aster diff                      # Check only changes vs main
+    aster diff                      # Check only unstaged changes
+    aster diff main                 # Check only changes vs main
     aster diff origin/develop       # Check only changes vs develop
     aster staged                    # Check only staged changes (pre-commit)
     aster test                      # Verify rules work

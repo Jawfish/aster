@@ -1,33 +1,41 @@
 #!/usr/bin/env bash
 #
-# Scan only changed lines in the current branch.
+# Scan only changed lines.
 #
 # Usage:
-#   scan-diff.sh [base_ref]
-#
-# Arguments:
-#   base_ref: The base branch/commit to compare against (default: main)
+#   scan-diff.sh              # Check unstaged changes (like git diff)
+#   scan-diff.sh --staged     # Check staged changes
+#   scan-diff.sh <base>       # Check changes vs base branch/commit
 #
 # Examples:
-#   scan-diff.sh              # Compare against main
-#   scan-diff.sh origin/main  # Compare against origin/main
-#   scan-diff.sh HEAD~5       # Compare against 5 commits ago
-#   scan-diff.sh --staged     # Check only staged changes
+#   scan-diff.sh              # Unstaged changes (working tree vs index)
+#   scan-diff.sh --staged     # Staged changes (index vs HEAD)
+#   scan-diff.sh main         # Changes vs main branch
+#   scan-diff.sh origin/main  # Changes vs origin/main
+#   scan-diff.sh HEAD~5       # Changes vs 5 commits ago
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ASTER_ROOT="$(dirname "$SCRIPT_DIR")"
-BASE_REF="${1:-main}"
+MODE="${1:-}"
 
-# Handle --staged flag
 # Use --no-ext-diff to avoid custom diff tools (delta, difftastic, etc.)
-if [[ "$BASE_REF" == "--staged" ]]; then
+if [[ -z "$MODE" ]]; then
+    # No argument: unstaged changes (working tree vs index)
+    DIFF_CMD="git --no-pager diff --no-ext-diff"
+    FILES_CMD="git diff --name-only"
+    DISPLAY_MODE="unstaged changes"
+elif [[ "$MODE" == "--staged" ]]; then
+    # Staged changes (index vs HEAD)
     DIFF_CMD="git --no-pager diff --no-ext-diff --staged"
     FILES_CMD="git diff --staged --name-only"
+    DISPLAY_MODE="staged changes"
 else
-    DIFF_CMD="git --no-pager diff --no-ext-diff $BASE_REF...HEAD"
-    FILES_CMD="git diff --name-only $BASE_REF...HEAD"
+    # Compare against a base ref
+    DIFF_CMD="git --no-pager diff --no-ext-diff $MODE...HEAD"
+    FILES_CMD="git diff --name-only $MODE...HEAD"
+    DISPLAY_MODE="changes against $MODE"
 fi
 
 # Get changed files (only .ts, .tsx, .py files)
@@ -61,7 +69,7 @@ $DIFF_CMD --unified=0 | awk '
     }
 ' > "$line_ranges"
 
-echo "Scanning changes against $BASE_REF..."
+echo "Scanning $DISPLAY_MODE..."
 echo ""
 
 exit_code=0
