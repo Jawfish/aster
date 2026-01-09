@@ -44,6 +44,8 @@ The linter enforces these testing patterns:
 
 ## Writing Rules
 
+**Always use the `/ast-grep` skill when writing or modifying rules.** This skill provides full ast-grep documentation including pattern syntax, rule types, transforms, and language-specific examples.
+
 Rules are YAML files following ast-grep's format:
 
 ```yaml
