@@ -25,6 +25,9 @@ staged:
 # Test the rules themselves
 test:
     ./bin/aster test
+    @echo ""
+    @echo "=== Running bats tests ==="
+    bats tests/
 
 # Show help
 help:

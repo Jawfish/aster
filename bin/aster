@@ -31,6 +31,10 @@ cmd_lint() {
 	echo "=== Checking test naming conventions ==="
 	"$ASTER_ROOT/scripts/check-sut-names.sh" "$target" "$target" || exit_code=1
 
+	echo ""
+	echo "=== Checking test file colocation ==="
+	"$ASTER_ROOT/scripts/check-test-colocation.sh" "$target" || exit_code=1
+
 	exit $exit_code
 }
 
