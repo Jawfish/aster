@@ -4,12 +4,22 @@ severity: error
 message: |
   Use StrEnum instead of inheriting from both str and Enum.
 
-  StrEnum is available in Python 3.11+ and provides cleaner syntax:
-  - Automatically makes enum values strings
-  - Use auto() for member values to avoid duplication
+  Our enum philosophy:
+  - Enums should be explicit about their intended type
+  - String enums should behave like strings in all contexts
+  - Use purpose-built types over inheritance workarounds
+  - Code should clearly communicate intent
+
+  Why StrEnum over (str, Enum):
+  - StrEnum is purpose-built for string enums (Python 3.11+)
+  - Multiple inheritance with str and Enum was a workaround, not a feature
+  - StrEnum automatically serializes to string without needing .value
+  - Cleaner type hints and better IDE support
+  - auto() generates string values correctly (lowercase of member name)
+  - More readable and idiomatic Python
 
   Example refactoring:
-    # Before: verbose inheritance
+    # Before: verbose multiple inheritance workaround
     class Status(str, Enum):
         ACTIVE = "ACTIVE"
         INACTIVE = "INACTIVE"
@@ -18,6 +28,9 @@ message: |
     class Status(StrEnum):
         ACTIVE = auto()
         INACTIVE = auto()
+
+  Note: StrEnum requires Python 3.11+. For earlier versions, use
+  the backport from the 'strenum' package or continue with (str, Enum).
 rule:
   any:
     - pattern: "class $NAME(str, Enum): $$$"

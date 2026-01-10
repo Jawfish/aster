@@ -18,7 +18,7 @@ run_test() {
 	local expected_violations="$2"
 
 	output=$("$CHECK_SCRIPT" "$TEST_DIR" "$TEST_DIR" 2>&1) || true
-	actual_violations=$(echo "$output" | grep -c "^VIOLATION:" || true)
+	actual_violations=$(echo "$output" | grep -c "^error\[test-references-symbol\]:" || true)
 	actual_violations=${actual_violations:-0}
 
 	if [[ "$actual_violations" -eq "$expected_violations" ]]; then
