@@ -15,6 +15,49 @@ TEST_DIR="${2:-$SOURCE_DIR}"
 # Minimum symbol length to check (avoids false positives from short words)
 MIN_LENGTH=4
 
+msg_test_references_symbol() {
+	local test_name="$1"
+	local symbol="$2"
+	cat <<EOF
+error[test-references-symbol]: Test names should describe behavior, not reference implementation symbols.
+
+Our test naming philosophy:
+- Tests document what the system does, not how it's built
+- Test names should be readable by non-programmers
+- Tests should survive refactoring without needing name changes
+- Names describe behavior from the user's perspective
+
+Why referencing symbols is problematic:
+- Renaming a function or class requires updating test names
+- Symbol names are implementation details that evolve over time
+- Tests named after symbols read like "test the function" not "verify behavior"
+- Makes it harder to understand what behavior is actually being tested
+- Couples tests to code structure instead of requirements
+
+Example refactoring:
+  # Before: References implementation symbol 'calculateDamage'
+  def test_calculate_damage_returns_correct_value():
+      result = calculate_damage(10, 3)
+      assert result == 7
+
+  # After: Describes behavior without mentioning the function
+  def test_damage_is_attack_minus_defense():
+      result = calculate_damage(10, 3)
+      assert result == 7
+
+  // Before: References class name 'UserService'
+  test("UserService returns user by id", ...)
+
+  // After: Describes behavior
+  test("user is retrieved by unique identifier", ...)
+
+The test name should answer "what behavior is being verified?" not "what code is being executed?"
+
+  ┌─ test: $test_name
+  │  references symbol: $symbol
+EOF
+}
+
 # Collect TypeScript/JavaScript symbols
 collect_ts_symbols() {
 	local dir="$1"
@@ -142,7 +185,8 @@ main() {
 				for ((j = i; j < ${#segments[@]}; j++)); do
 					combo+="${segments[j]}"
 					if [[ "$combo" == "$symbol" ]]; then
-						echo "VIOLATION: Test '$test_name' references symbol '$symbol'"
+						msg_test_references_symbol "$test_name" "$symbol"
+						echo ""
 						violations=$((violations + 1))
 						matched=true
 						break 2
@@ -154,13 +198,11 @@ main() {
 		done <<<"$symbols"
 	done <<<"$tests"
 
-	echo ""
 	if [ "$violations" -gt 0 ]; then
-		echo "Found $violations test(s) referencing implementation symbols."
-		echo "Tests should describe behavior, not implementation details."
+		echo "Found $violations test name violation(s)."
 		exit 1
 	else
-		echo "All tests use behavior-focused names."
+		echo "No test name violations found."
 		exit 0
 	fi
 }

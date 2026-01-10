@@ -4,24 +4,40 @@ severity: error
 message: |
   StrEnum members should use auto() instead of explicit string values.
 
-  Using auto() avoids duplication between the member name and value:
-  - Reduces typo risk
-  - Keeps member names and values in sync
-  - Cleaner, more maintainable code
+  Our enum philosophy:
+  - DRY: Don't Repeat Yourself
+  - Member names are the single source of truth
+  - Explicit values that duplicate names invite inconsistency
+  - Let the language do the work
+
+  Why auto() matters:
+  - Duplicating names as values (ACTIVE = "ACTIVE") violates DRY
+  - Typos in string values are hard to catch and cause subtle bugs
+  - Renaming a member should automatically update its value
+  - auto() guarantees name and value stay in sync
+  - Less code to read, write, and maintain
+  - Reviewers don't need to verify name matches value
 
   Example refactoring:
-    # Before: duplicated values
+    # Before: duplicated, error-prone values
     class Status(StrEnum):
         ACTIVE = "ACTIVE"
         INACTIVE = "INACTIVE"
+        PENDING = "PNEDING"  # Typo goes unnoticed
 
-    # After: auto-generated values
+    # After: auto-generated, always correct
     class Status(StrEnum):
         ACTIVE = auto()
         INACTIVE = auto()
+        PENDING = auto()
 
   Note: auto() generates lowercase values by default in StrEnum.
-  If you need specific casing, consider overriding _generate_next_value_.
+  If you need specific casing, override _generate_next_value_:
+
+    class Status(StrEnum):
+        @staticmethod
+        def _generate_next_value_(name, start, count, last_values):
+            return name  # Preserves UPPER_CASE
 rule:
   all:
     - any:
