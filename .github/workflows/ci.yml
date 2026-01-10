@@ -34,7 +34,13 @@ jobs:
       - uses: actions/checkout@v6
       - name: Install ast-grep
         run: npm install -g @ast-grep/cli
+      - name: Install bats
+        run: |
+          git clone https://github.com/bats-core/bats-core.git /tmp/bats
+          sudo /tmp/bats/install.sh /usr/local
       - name: Run ast-grep rule tests
         run: ./bin/aster test
       - name: Run SUT check tests
         run: ./scripts/test-sut-check.sh
+      - name: Run colocation tests
+        run: bats tests/

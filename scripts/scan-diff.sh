@@ -225,6 +225,89 @@ else
 	fi
 fi
 
+# === TEST COLOCATION CHECK ===
+echo ""
+echo "=== Checking test file colocation ==="
+
+colocation_violations=0
+
+# Check changed test files for colocation issues
+while IFS= read -r file; do
+	[[ -z "$file" ]] && continue
+
+	# Python: test_*.py is wrong prefix
+	if [[ "$file" =~ ^.*/test_[^/]+\.py$ ]]; then
+		echo "error[wrong-test-prefix]: Use {name}_test.py instead of test_{name}.py"
+		echo "  --> $file"
+		echo ""
+		colocation_violations=$((colocation_violations + 1))
+	fi
+
+	# Python: *_test.py in tests/ or test/ directory
+	if [[ "$file" =~ _test\.py$ ]] && [[ "$file" =~ /tests?/ ]]; then
+		echo "error[test-not-colocated]: Test file should be next to SUT, not in tests/ directory"
+		echo "  --> $file"
+		echo ""
+		colocation_violations=$((colocation_violations + 1))
+	fi
+
+	# Python: orphaned test (no matching SUT)
+	if [[ "$file" =~ _test\.py$ ]] && [[ ! "$file" =~ /tests?/ ]] && [[ ! "$file" =~ ^test_ ]]; then
+		sut="${file%_test.py}.py"
+		if [[ ! -f "$sut" ]]; then
+			echo "error[orphaned-test]: No matching SUT found"
+			echo "  --> $file (expected: $sut)"
+			echo ""
+			colocation_violations=$((colocation_violations + 1))
+		fi
+	fi
+
+	# TypeScript: *.spec.ts(x) is wrong suffix
+	if [[ "$file" =~ \.spec\.tsx?$ ]]; then
+		echo "error[wrong-test-suffix]: Use .test.ts instead of .spec.ts"
+		echo "  --> $file"
+		echo ""
+		colocation_violations=$((colocation_violations + 1))
+	fi
+
+	# TypeScript: *.test.ts(x) in __tests__/ or tests/ directory
+	if [[ "$file" =~ \.test\.tsx?$ ]] && [[ "$file" =~ /__tests__/|/tests/ ]]; then
+		echo "error[test-not-colocated]: Test file should be next to SUT, not in __tests__/ directory"
+		echo "  --> $file"
+		echo ""
+		colocation_violations=$((colocation_violations + 1))
+	fi
+
+	# TypeScript: orphaned .test.ts (no matching SUT)
+	if [[ "$file" =~ \.test\.ts$ ]] && [[ ! "$file" =~ /__tests__/|/tests/ ]]; then
+		sut="${file%.test.ts}.ts"
+		if [[ ! -f "$sut" ]]; then
+			echo "error[orphaned-test]: No matching SUT found"
+			echo "  --> $file (expected: $sut)"
+			echo ""
+			colocation_violations=$((colocation_violations + 1))
+		fi
+	fi
+
+	# TypeScript: orphaned .test.tsx (no matching SUT)
+	if [[ "$file" =~ \.test\.tsx$ ]] && [[ ! "$file" =~ /__tests__/|/tests/ ]]; then
+		sut="${file%.test.tsx}.tsx"
+		if [[ ! -f "$sut" ]]; then
+			echo "error[orphaned-test]: No matching SUT found"
+			echo "  --> $file (expected: $sut)"
+			echo ""
+			colocation_violations=$((colocation_violations + 1))
+		fi
+	fi
+done <<<"$changed_files"
+
+if [[ "$colocation_violations" -gt 0 ]]; then
+	echo "Found $colocation_violations test colocation violation(s) in changed files."
+	exit_code=1
+else
+	echo "No test colocation violations in changed files."
+fi
+
 echo ""
 if [[ "$exit_code" -eq 0 ]]; then
 	echo "All checks passed on changed code."
