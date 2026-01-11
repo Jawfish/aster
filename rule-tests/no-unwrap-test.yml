@@ -1,0 +1,36 @@
+id: no-unwrap
+valid:
+  # Question mark operator
+  - "let x = some_result?;"
+  - "let x = opt.ok_or(Error::NotFound)?;"
+  # unwrap_or family (safe)
+  - "let x = opt.unwrap_or(0);"
+  - "let x = opt.unwrap_or_else(|| default());"
+  - "let x = opt.unwrap_or_default();"
+  # Pattern matching
+  - "if let Some(v) = opt { use_v(v); }"
+  - "match result { Ok(v) => v, Err(e) => handle(e) }"
+  - "let Some(x) = opt else { return; };"
+  # Map/and_then chains without unwrap
+  - "let x = opt.map(|v| v + 1);"
+  - "let x = result.and_then(|v| process(v));"
+  - "let x = opt.ok_or(SomeError);"
+invalid:
+  # Basic unwrap
+  - "let x = opt.unwrap();"
+  - "let x = result.unwrap();"
+  # Basic expect
+  - 'let x = opt.expect("value required");'
+  - 'let x = result.expect("operation failed");'
+  # Chained method calls
+  - "let x = get_value().map(|v| v + 1).unwrap();"
+  - "let x = items.first().unwrap();"
+  # Turbofish syntax
+  - 'let x = "42".parse::<i32>().unwrap();'
+  - 'let x = "42".parse::<i32>().expect("parse failed");'
+  # Error variants
+  - "let e = result.unwrap_err();"
+  - 'let e = result.expect_err("should have failed");'
+  # In expressions
+  - "process(opt.unwrap());"
+  - "if opt.unwrap() > 0 { do_something(); }"

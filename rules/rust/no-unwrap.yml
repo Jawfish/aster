@@ -1,0 +1,44 @@
+id: no-unwrap
+language: Rust
+severity: error
+message: |
+  Calling .unwrap() or .expect() panics on None/Err, causing crashes in production.
+
+  Our error handling philosophy:
+  - Handle errors explicitly rather than crashing
+  - Fail fast is for programmer errors, not user input or external failures
+  - Panics should never reach production code paths
+  - Recoverable errors should be recovered, not unwrapped
+
+  Why unwrap/expect are problematic:
+  - Panics are not catchable in normal Rust code flow
+  - Production crashes from unwrap are embarrassing and preventable
+  - .expect("message") still panics, just with a better message
+  - Unwrap hides the failure case, making code harder to reason about
+
+  Safe alternatives:
+  1. ? operator - propagate errors to the caller
+  2. .unwrap_or(default) - provide a fallback value
+  3. Pattern matching - explicit handling of both cases
+  4. .ok() / .err() - convert to Option for filtering
+
+  Example refactoring:
+    // Before: panics on parse failure
+    let port: u16 = env::var("PORT").unwrap().parse().expect("invalid port");
+
+    // After: propagate with ? (in a Result-returning function)
+    let port: u16 = env::var("PORT")?.parse()?;
+
+    // After: pattern matching with fallback
+    let port: u16 = match env::var("PORT") {
+        Ok(val) => val.parse().unwrap_or(8080),
+        Err(_) => 8080,
+    };
+
+  See testing guidelines for more details on error handling.
+rule:
+  any:
+    - pattern: $A.unwrap()
+    - pattern: $A.expect($MSG)
+    - pattern: $A.unwrap_err()
+    - pattern: $A.expect_err($MSG)
