@@ -163,6 +163,50 @@ teardown() {
 	[[ "$output" == *"error[orphaned-test]"* ]]
 }
 
+# --- Rust: Valid cases ---
+
+@test "rust: valid test file next to SUT passes" {
+	mkdir -p "$TEST_DIR/handlers"
+	echo "" >"$TEST_DIR/handlers/service.rs"
+	echo "" >"$TEST_DIR/handlers/service_test.rs"
+
+	run "$SCRIPT" "$TEST_DIR"
+
+	[ "$status" -eq 0 ]
+}
+
+# --- Rust: Invalid cases ---
+
+@test "rust: wrong prefix test_*.rs is flagged" {
+	mkdir -p "$TEST_DIR/handlers"
+	echo "" >"$TEST_DIR/handlers/test_service.rs"
+
+	run "$SCRIPT" "$TEST_DIR"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"error[wrong-test-prefix]"* ]]
+}
+
+@test "rust: test in tests/ subdirectory is flagged" {
+	mkdir -p "$TEST_DIR/handlers/tests"
+	echo "" >"$TEST_DIR/handlers/tests/service_test.rs"
+
+	run "$SCRIPT" "$TEST_DIR"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"error[test-not-colocated]"* ]]
+}
+
+@test "rust: orphaned test without SUT is flagged" {
+	mkdir -p "$TEST_DIR/handlers"
+	echo "" >"$TEST_DIR/handlers/orphan_test.rs"
+
+	run "$SCRIPT" "$TEST_DIR"
+
+	[ "$status" -eq 1 ]
+	[[ "$output" == *"error[orphaned-test]"* ]]
+}
+
 # --- Edge cases ---
 
 @test "empty directory passes" {

@@ -299,6 +299,33 @@ while IFS= read -r file; do
 			colocation_violations=$((colocation_violations + 1))
 		fi
 	fi
+
+	# Rust: test_*.rs is wrong prefix
+	if [[ "$file" =~ ^.*/test_[^/]+\.rs$ ]]; then
+		echo "error[wrong-test-prefix]: Use {name}_test.rs instead of test_{name}.rs"
+		echo "  --> $file"
+		echo ""
+		colocation_violations=$((colocation_violations + 1))
+	fi
+
+	# Rust: *_test.rs in tests/ directory
+	if [[ "$file" =~ _test\.rs$ ]] && [[ "$file" =~ /tests/ ]]; then
+		echo "error[test-not-colocated]: Test file should be next to SUT, not in tests/ directory"
+		echo "  --> $file"
+		echo ""
+		colocation_violations=$((colocation_violations + 1))
+	fi
+
+	# Rust: orphaned test (no matching SUT)
+	if [[ "$file" =~ _test\.rs$ ]] && [[ ! "$file" =~ /tests/ ]] && [[ ! "$file" =~ ^test_ ]]; then
+		sut="${file%_test.rs}.rs"
+		if [[ ! -f "$sut" ]]; then
+			echo "error[orphaned-test]: No matching SUT found"
+			echo "  --> $file (expected: $sut)"
+			echo ""
+			colocation_violations=$((colocation_violations + 1))
+		fi
+	fi
 done <<<"$changed_files"
 
 if [[ "$colocation_violations" -gt 0 ]]; then
