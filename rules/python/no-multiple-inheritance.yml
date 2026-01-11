@@ -1,0 +1,44 @@
+id: no-multiple-inheritance-py
+language: Python
+severity: error
+message: |
+  Multiple inheritance creates complex method resolution order and tight coupling between classes.
+
+  Why multiple inheritance is problematic:
+  - Diamond problem: ambiguous method resolution when two parents share a grandparent
+  - Fragile base class: changes to any parent can break the child in unexpected ways
+  - Cognitive overhead: harder to understand which methods come from where
+  - Testing complexity: must test all combinations of parent behaviors
+
+  Instead of multiple inheritance:
+  1. Use composition: store instances of other classes as attributes
+  2. Use protocols/interfaces: define behavior contracts without inheritance
+  3. Use mixins sparingly: small, focused classes with no state (still discouraged)
+
+  Common case - (str, Enum) or (int, Enum):
+    # Bad
+    class Status(str, Enum):
+        ACTIVE = "active"
+
+    # Good - use StrEnum or IntEnum instead
+    class Status(StrEnum):
+        ACTIVE = "active"
+
+  General case:
+    # Bad
+    class UserService(HttpClient, CacheManager):
+        pass
+
+    # Good - use composition
+    class UserService:
+        def __init__(self, http: HttpClient, cache: CacheManager):
+            self.http = http
+            self.cache = cache
+rule:
+  pattern: |
+    class $NAME($BASE1, $$$REST):
+        $$$BODY
+  not:
+    has:
+      kind: identifier
+      regex: "^(Protocol|ABC|Generic|TypedDict|NamedTuple|Enum|StrEnum|IntEnum|IntFlag|Flag|BaseModel|Base|Exception|Error|Warning|BaseException|TestCase|Controller)$"

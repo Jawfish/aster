@@ -1,0 +1,30 @@
+id: noqa-with-reason-py
+language: Python
+severity: error
+message: |
+  Lint ignore directives must include an explanation of why the rule is being ignored.
+
+  Why explanations are required:
+  - Accountability: future readers know someone consciously decided to ignore the rule
+  - Context: the reason may no longer apply after refactoring
+  - Code review: reviewers can evaluate if the exception is justified
+  - Maintenance: helps decide whether to keep or remove the ignore during updates
+  - Documentation: serves as inline explanation of unusual code
+
+  What makes a good explanation:
+  1. State WHY the rule doesn't apply, not just WHAT rule is ignored
+  2. Be specific enough that someone can evaluate if it's still valid
+  3. Reference external constraints if applicable (third-party libs, APIs)
+
+  Bad:
+    x = some_long_thing  # noqa: E501
+    y = dynamic_thing  # type: ignore
+    z = weird_call()  # noqa: E501 line too long
+
+  Good:
+    x = some_long_thing  # noqa: E501 - URL cannot be split without breaking
+    y = dynamic_thing  # type: ignore[arg-type] - third party lib has incorrect stubs
+    z = api.endpoint  # noqa: E501 - API path defined by external service
+rule:
+  kind: comment
+  regex: "^#\\s*(noqa|type:\\s*ignore)(\\[.+?\\])?(:\\s*[A-Z0-9,\\s]+)?\\s*$"
