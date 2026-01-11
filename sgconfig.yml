@@ -1,5 +1,6 @@
 ruleDirs:
   - rules/typescript
   - rules/python
+  - rules/rust
 testConfigs:
   - testDir: rule-tests
