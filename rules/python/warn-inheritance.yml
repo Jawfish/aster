@@ -1,0 +1,51 @@
+id: warn-inheritance-py
+language: Python
+severity: warning
+message: |
+  Inheritance creates tight coupling between classes and makes code harder to change.
+
+  Why inheritance is problematic:
+  - Tight coupling: child classes depend on parent implementation details
+  - Fragile base class: changes to parent can break children in unexpected ways
+  - Inflexible: locked into a single hierarchy, can't easily swap implementations
+  - Hidden behavior: methods may come from anywhere in the hierarchy
+  - Testing difficulty: must understand entire hierarchy to test effectively
+
+  Prefer composition over inheritance:
+  1. Dependency injection: pass collaborators through constructor
+  2. Protocols: define behavior contracts without implementation coupling
+  3. Delegation: wrap another object and forward calls
+  4. Interface implementation: inheriting from ABC/Protocol to fulfill a contract is fine
+
+  If you must use inheritance:
+  - One level maximum (enforced by lint-inheritance-depth)
+  - Prefer abstract bases over concrete classes
+
+  Allowed bases (not flagged):
+  - Protocol, ABC, Generic, TypedDict, NamedTuple (structural typing)
+  - Enum, StrEnum, IntEnum, IntFlag, Flag (value types)
+  - BaseModel, Base (Pydantic/SQLAlchemy - framework requirement)
+  - Exception, Error, Warning (exception hierarchies)
+  - TestCase, Controller (framework base classes)
+
+  Example refactoring:
+    # Bad - inheritance couples Dog to Animal implementation
+    class Dog(Animal):
+        pass
+
+    # Good - composition allows flexible behavior injection
+    class Dog:
+        def __init__(self, movement: MovementBehavior, sound: SoundBehavior):
+            self.movement = movement
+            self.sound = sound
+
+        def move(self):
+            self.movement.execute()
+rule:
+  kind: class_definition
+  has:
+    kind: argument_list
+    has:
+      kind: identifier
+      not:
+        regex: "^(Protocol|ABC|Generic|TypedDict|NamedTuple|Enum|StrEnum|IntEnum|IntFlag|Flag|BaseModel|Base|Exception|Error|Warning|BaseException|TestCase|Controller)$"
