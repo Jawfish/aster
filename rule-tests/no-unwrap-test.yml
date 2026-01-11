@@ -15,6 +15,19 @@ valid:
   - "let x = opt.map(|v| v + 1);"
   - "let x = result.and_then(|v| process(v));"
   - "let x = opt.ok_or(SomeError);"
+  # Allowed in #[test] functions
+  - |
+    #[test]
+    fn test_foo() { opt.unwrap(); }
+  - |
+    #[tokio::test]
+    async fn test_async() { opt.unwrap(); }
+  # Allowed in #[cfg(test)] modules
+  - |
+    #[cfg(test)]
+    mod tests {
+        fn helper() { opt.unwrap(); }
+    }
 invalid:
   # Basic unwrap
   - "let x = opt.unwrap();"
