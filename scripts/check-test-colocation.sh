@@ -5,7 +5,8 @@
 # Rules:
 # - Python: {name}_test.py must have {name}.py in same directory
 # - TypeScript: {name}.test.ts(x) must have {name}.ts(x) in same directory
-# - No test_*.py (wrong prefix)
+# - Rust: {name}_test.rs must have {name}.rs in same directory
+# - No test_*.py or test_*.rs (wrong prefix)
 # - No *.spec.ts(x) (use .test.ts(x))
 # - No tests in tests/ or __tests__/ subdirectories
 
@@ -226,6 +227,29 @@ while IFS= read -r file; do
 		report_violation "orphaned-test" "$file" "$sut"
 	fi
 done < <(find "$target" -type f -name "*.test.tsx" 2>/dev/null | grep -Ev "$EXCLUDE_PATTERN" | grep -Ev "/__tests__/|/tests/" || true)
+
+# --- Rust checks ---
+
+# Wrong prefix: test_*.rs (should be *_test.rs)
+while IFS= read -r file; do
+	[[ -z "$file" ]] && continue
+	report_violation "wrong-test-prefix" "$file"
+done < <(find "$target" -type f -name "test_*.rs" 2>/dev/null | grep -Ev "$EXCLUDE_PATTERN" || true)
+
+# In tests/ subdirectory
+while IFS= read -r file; do
+	[[ -z "$file" ]] && continue
+	report_violation "test-not-colocated" "$file" "tests"
+done < <(find "$target" -type f -name "*_test.rs" -path "*/tests/*" 2>/dev/null | grep -Ev "$EXCLUDE_PATTERN" || true)
+
+# Orphaned Rust test (no matching SUT)
+while IFS= read -r file; do
+	[[ -z "$file" ]] && continue
+	sut="${file%_test.rs}.rs"
+	if [[ ! -f "$sut" ]]; then
+		report_violation "orphaned-test" "$file" "$sut"
+	fi
+done < <(find "$target" -type f -name "*_test.rs" 2>/dev/null | grep -Ev "$EXCLUDE_PATTERN" | grep -Ev "/tests/" || true)
 
 # --- Summary ---
 

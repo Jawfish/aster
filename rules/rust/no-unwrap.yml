@@ -1,6 +1,10 @@
 id: no-unwrap
 language: Rust
 severity: error
+ignores:
+  - "**/tests/**"
+  - "**/*_test.rs"
+  - "**/*_tests.rs"
 message: |
   Calling .unwrap() or .expect() panics on None/Err, causing crashes in production.
 
@@ -42,3 +46,23 @@ rule:
     - pattern: $A.expect($MSG)
     - pattern: $A.unwrap_err()
     - pattern: $A.expect_err($MSG)
+  not:
+    inside:
+      any:
+        # Exclude #[cfg(test)] modules
+        - kind: mod_item
+          follows:
+            kind: attribute_item
+            regex: "cfg\\(test\\)"
+            stopBy:
+              not:
+                kind: attribute_item
+        # Exclude #[test] functions (and variants like #[tokio::test])
+        - kind: function_item
+          follows:
+            kind: attribute_item
+            regex: "test"
+            stopBy:
+              not:
+                kind: attribute_item
+      stopBy: end
